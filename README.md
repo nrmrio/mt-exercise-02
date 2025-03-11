@@ -1,4 +1,4 @@
-# MT Exercise 3: Pytorch RNN Language Models
+# MT Exercise 2: Pytorch RNN Language Models
 
 This repo shows how to train neural language models using [Pytorch example code](https://github.com/pytorch/examples/tree/master/word_language_model). Thanks to Emma van den Bold, the original author of these scripts. 
 

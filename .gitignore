@@ -1,2 +1,4 @@
-data/europarl/raw/europarl.en.txt
-data/europarl/raw/europarl.en.txt.gz
+models/
+logs/
+samples/
+data/

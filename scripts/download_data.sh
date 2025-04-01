@@ -1,43 +1,49 @@
-#! /bin/bash
+#!/bin/bash
 
 scripts=$(dirname "$0")
-base=$scripts/..
+base=$(realpath "$scripts/..")
 
 data=$base/data
-
-mkdir -p $data
-
 tools=$base/tools
 
-# link default training data for easier access
+mkdir -p "$data/europarl"
+mkdir -p "$data/europarl/raw"
 
-mkdir -p $data/wikitext-2
+cd "$data/europarl/raw" || exit
 
-for corpus in train valid test; do
-    absolute_path=$(realpath $tools/pytorch-examples/word_language_model/data/wikitext-2/$corpus.txt)
-    ln -snf $absolute_path $data/wikitext-2/$corpus.txt
-done
+echo "=== Downloading Europarl (English) ==="
+wget https://object.pouta.csc.fi/OPUS-Europarl/v3/mono/en.txt.gz -O europarl.en.txt.gz
 
-# download a different interesting data set!
+echo "=== Decompressing ==="
+gunzip europarl.en.txt.gz
 
-mkdir -p $data/grimm
+# Sampling 30,000 lines.
+SAMPLE_SIZE=30000
+echo "=== Sampling ${SAMPLE_SIZE} lines randomly ==="
+shuf europarl.en.txt | head -n "$SAMPLE_SIZE" > europarl.sampled.txt
 
-mkdir -p $data/grimm/raw
+echo "=== Preprocessing (tokenize + limit vocab) ==="
+# If your preprocess.py handles tokenization & optional vocab limit:
+python "$base/scripts/preprocess.py" \
+    --vocab-size 10000 \
+    --tokenize \
+    --lang "en" \
+    --sent-tokenize \
+    < europarl.sampled.txt \
+    > europarl.sampled.preprocessed.txt
 
-wget https://www.gutenberg.org/files/52521/52521-0.txt
-mv 52521-0.txt $data/grimm/raw/tales.txt
+# Split into train, valid, test
+echo "=== Splitting into train/valid/test ==="
+TOTAL_LINES=$(wc -l < europarl.sampled.preprocessed.txt)
+TRAIN_SIZE=$(( (SAMPLE_SIZE * 80) / 100 ))  # 80% for train
+VALID_SIZE=$(( (SAMPLE_SIZE * 10) / 100 ))  # 10% for valid
+# The last 10% will be for test
 
-# preprocess slightly
+head -n "$TRAIN_SIZE" europarl.sampled.preprocessed.txt > "$data/europarl/train.txt"
+head -n $((TRAIN_SIZE + VALID_SIZE)) europarl.sampled.preprocessed.txt | tail -n "$VALID_SIZE" > "$data/europarl/valid.txt"
+tail -n $((SAMPLE_SIZE - TRAIN_SIZE - VALID_SIZE)) europarl.sampled.preprocessed.txt > "$data/europarl/test.txt"
 
-cat $data/grimm/raw/tales.txt | python $base/scripts/preprocess_raw.py > $data/grimm/raw/tales.cleaned.txt
-
-# tokenize, fix vocabulary upper bound
-
-cat $data/grimm/raw/tales.cleaned.txt | python $base/scripts/preprocess.py --vocab-size 5000 --tokenize --lang "en" --sent-tokenize > \
-    $data/grimm/raw/tales.preprocessed.txt
-
-# split into train, valid and test
-
-head -n 440 $data/grimm/raw/tales.preprocessed.txt | tail -n 400 > $data/grimm/valid.txt
-head -n 840 $data/grimm/raw/tales.preprocessed.txt | tail -n 400 > $data/grimm/test.txt
-tail -n 3075 $data/grimm/raw/tales.preprocessed.txt | head -n 2955 > $data/grimm/train.txt
+echo
+echo "=== Done! Your Europarl data is in: $data/europarl ==="
+echo "=== Line counts: ==="
+wc -l "$data/europarl/"*.txt

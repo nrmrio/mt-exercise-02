@@ -110,8 +110,7 @@ After training, generate new text from a model with:
 - Loads log files from `logs/`
 - Plots **training vs. validation perplexity** over epochs
 - Extracts and ranks **test perplexities** across all dropout settings
-- Saves line charts to `plots/` for inclusion in reports
-
+- Displays the charts and visuals in the notebook
 ---
 
 ## Results and Reporting

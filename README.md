@@ -181,4 +181,4 @@ samples/
   sample_dropout_0.4.txt
 ```
 
-🧪 Evaluation results and charts are located in the `plots/` directory.
+Evaluation results and charts are located in the `plots/` directory.
